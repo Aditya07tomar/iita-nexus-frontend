@@ -103,7 +103,7 @@ const Landing = () => {
                 onClick={(e) => { e.preventDefault(); smoothScrollTo(id); }}
                 className="relative px-3 py-2 text-sm font-medium text-[#adaaaa] hover:text-white transition-all group"
               >
-                {id.charAt(0).toUpperCase() + id.slice(1)}
+                {id === 'faq' ? 'FAQ' : id.charAt(0).toUpperCase() + id.slice(1)}
                 <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-0 bg-[#fd9d27] rounded-full transition-all duration-300 group-hover:w-full" />
               </a>
             ))}
