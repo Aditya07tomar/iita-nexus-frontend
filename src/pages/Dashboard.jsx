@@ -18,6 +18,7 @@ import Marketplace from '../components/Marketplace';
 import Events from '../components/Events';
 import CGPACalculator from '../components/CGPACalculator';
 import FeedbackForm from '../components/FeedbackForm';
+import api from '../services/api';
 
 const Dashboard = () => {
     const [user, setUser] = useState(null);
@@ -27,7 +28,50 @@ const Dashboard = () => {
 
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('Overview');
+    const [nextMealData, setNextMealData] = useState({ title: 'Loading...', menu: '' });
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetchNextMeal = async () => {
+            try {
+                const res = await api.get('/mess/weekly');
+                const weeklyMenu = res.data;
+                const now = new Date();
+                const hour = now.getHours();
+                
+                let targetDate = new Date(now);
+                let mealType = 'Breakfast';
+                
+                if (hour < 10) {
+                    mealType = 'Breakfast';
+                } else if (hour < 15) {
+                    mealType = 'Lunch';
+                } else if (hour < 22) {
+                    mealType = 'Dinner';
+                } else {
+                    mealType = 'Breakfast';
+                    targetDate.setDate(targetDate.getDate() + 1);
+                }
+                
+                const dayName = targetDate.toLocaleDateString('en-US', { weekday: 'long' });
+                const dayMenu = weeklyMenu.find(d => d.day_of_week === dayName);
+                
+                if (dayMenu) {
+                    setNextMealData({
+                        title: mealType,
+                        menu: dayMenu[mealType.toLowerCase()] || 'Menu not updated'
+                    });
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        fetchNextMeal();
+        
+        // Refresh every minute to stay synced with time
+        const interval = setInterval(fetchNextMeal, 60000);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         // Guard clause for session management
@@ -228,7 +272,7 @@ const Dashboard = () => {
                     {/* View: Overview Dashboard */}
                     {activeTab === 'Overview' && (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-up" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
-                            <StatusCard title="Next Meal" value="Dinner" sub="Mess 1 • Paneer Butter" color="#c0fe71" icon={<Utensils />} />
+                            <StatusCard title="Next Meal" value={nextMealData.title} sub={nextMealData.menu} color="#c0fe71" icon={<Utensils />} />
                             
                             {/* Real-time Transit Countdown */}
                             <TransitCard />
