@@ -23,16 +23,16 @@ const CGPACalculator = () => {
     
     // SGPA state
     const [subjects, setSubjects] = useState([
-        { name: '', credits: '', grade: 'A' }
+        { name: '', credits: '4', grade: 'A' }
     ]);
 
     // CGPA state
     const [semesters, setSemesters] = useState([
-        { sgpa: '', credits: '' }
+        { sgpa: '9.00', credits: '24' }
     ]);
 
     // ──── SGPA Calculator ────
-    const addSubject = () => setSubjects([...subjects, { name: '', credits: '', grade: 'A' }]);
+    const addSubject = () => setSubjects([...subjects, { name: '', credits: '4', grade: 'A' }]);
     const removeSubject = (i) => setSubjects(subjects.filter((_, idx) => idx !== i));
     const updateSubject = (i, field, value) => {
         const updated = [...subjects];
@@ -52,7 +52,7 @@ const CGPACalculator = () => {
     };
 
     // ──── CGPA Calculator ────
-    const addSemester = () => setSemesters([...semesters, { sgpa: '', credits: '' }]);
+    const addSemester = () => setSemesters([...semesters, { sgpa: '9.00', credits: '24' }]);
     const removeSemester = (i) => setSemesters(semesters.filter((_, idx) => idx !== i));
     const updateSemester = (i, field, value) => {
         const updated = [...semesters];
@@ -73,8 +73,8 @@ const CGPACalculator = () => {
     };
 
     const resetAll = () => {
-        setSubjects([{ name: '', credits: '', grade: 'A' }]);
-        setSemesters([{ sgpa: '', credits: '' }]);
+        setSubjects([{ name: '', credits: '4', grade: 'A' }]);
+        setSemesters([{ sgpa: '9.00', credits: '24' }]);
     };
 
     const sgpa = calculateSGPA();
