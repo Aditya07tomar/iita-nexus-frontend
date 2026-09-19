@@ -36,7 +36,7 @@ const CGPACalculator = () => {
     const removeSubject = (i) => setSubjects(subjects.filter((_, idx) => idx !== i));
     const updateSubject = (i, field, value) => {
         const updated = [...subjects];
-        updated[i][field] = value;
+        updated[i] = { ...updated[i], [field]: value };
         setSubjects(updated);
     };
 
@@ -56,7 +56,7 @@ const CGPACalculator = () => {
     const removeSemester = (i) => setSemesters(semesters.filter((_, idx) => idx !== i));
     const updateSemester = (i, field, value) => {
         const updated = [...semesters];
-        updated[i][field] = value;
+        updated[i] = { ...updated[i], [field]: value };
         setSemesters(updated);
     };
 
