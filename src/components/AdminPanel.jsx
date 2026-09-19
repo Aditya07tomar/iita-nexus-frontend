@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
     BarChart3, Users, Utensils, Briefcase, Megaphone, BookOpen, 
-    Plus, Edit3, Trash2, X, Save, RefreshCw 
+    Plus, Edit3, Trash2, X, Save, RefreshCw, Calendar, MessageCircle,
+    AlertTriangle, ShoppingBag, Star
 } from 'lucide-react';
 import api from '../services/api';
 
@@ -18,6 +19,10 @@ const AdminPanel = () => {
         { id: 'announcements', label: 'Announcements', icon: <Megaphone size={18} /> },
         { id: 'mess', label: 'Mess Menu', icon: <Utensils size={18} /> },
         { id: 'materials', label: 'Materials', icon: <BookOpen size={18} /> },
+        { id: 'events', label: 'Events', icon: <Calendar size={18} /> },
+        { id: 'feedback', label: 'Feedback', icon: <MessageCircle size={18} /> },
+        { id: 'lostfound', label: 'Lost & Found', icon: <AlertTriangle size={18} /> },
+        { id: 'marketplace', label: 'Marketplace', icon: <ShoppingBag size={18} /> },
     ];
 
     return (
@@ -46,6 +51,10 @@ const AdminPanel = () => {
             {activeSection === 'announcements' && <AnnouncementsSection />}
             {activeSection === 'mess' && <MessSection />}
             {activeSection === 'materials' && <MaterialsSection />}
+            {activeSection === 'events' && <EventsSection />}
+            {activeSection === 'feedback' && <FeedbackSection />}
+            {activeSection === 'lostfound' && <LostFoundSection />}
+            {activeSection === 'marketplace' && <MarketplaceSection />}
         </div>
     );
 };
@@ -427,6 +436,347 @@ const MaterialsSection = () => {
                     <button onClick={() => handleDelete(m.id)} className="p-2 bg-[#262626] hover:bg-[#ff7351] text-[#adaaaa] hover:text-white rounded-lg transition-all"><Trash2 size={14} /></button>
                 </div>
             ))}
+        </div>
+    );
+};
+
+// ──── Events Management ────
+const EventsSection = () => {
+    const [events, setEvents] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [showForm, setShowForm] = useState(false);
+    const [editingId, setEditingId] = useState(null);
+    const [form, setForm] = useState({ title: '', description: '', event_date: '', location: '', organizer: '', category: 'general' });
+
+    const fetchEvents = useCallback(async () => {
+        try { const res = await api.get('/events'); setEvents(res.data); }
+        catch (err) { console.error(err); }
+        finally { setLoading(false); }
+    }, []);
+
+    useEffect(() => { fetchEvents(); }, [fetchEvents]);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            if (editingId) {
+                await api.put(`/events/${editingId}`, form);
+            } else {
+                await api.post('/events', form);
+            }
+            setShowForm(false);
+            setEditingId(null);
+            setForm({ title: '', description: '', event_date: '', location: '', organizer: '', category: 'general' });
+            fetchEvents();
+        } catch (err) {
+            alert(err.response?.data?.message || 'Operation failed');
+        }
+    };
+
+    const handleEdit = (ev) => {
+        setForm({
+            title: ev.title, description: ev.description || '',
+            event_date: ev.event_date ? new Date(ev.event_date).toISOString().slice(0, 16) : '',
+            location: ev.location || '', organizer: ev.organizer || '', category: ev.category || 'general'
+        });
+        setEditingId(ev.id);
+        setShowForm(true);
+    };
+
+    const handleDelete = async (id) => {
+        if (!confirm('Delete this event?')) return;
+        try { await api.delete(`/events/${id}`); fetchEvents(); }
+        catch (err) { alert('Delete failed'); }
+    };
+
+    if (loading) return <div className="flex justify-center py-20"><div className="spinner" style={{ width: 32, height: 32 }} /></div>;
+
+    return (
+        <div className="space-y-4">
+            <div className="flex justify-between items-center">
+                <p className="text-sm text-[#adaaaa] font-medium">{events.length} event{events.length !== 1 ? 's' : ''}</p>
+                <button onClick={() => { setShowForm(true); setEditingId(null); setForm({ title: '', description: '', event_date: '', location: '', organizer: '', category: 'general' }); }} className="btn-primary px-4 py-2 text-sm flex items-center gap-2">
+                    <Plus size={16} /> New Event
+                </button>
+            </div>
+
+            {showForm && (
+                <AdminForm title={editingId ? 'Edit Event' : 'New Event'} onClose={() => setShowForm(false)} onSubmit={handleSubmit}>
+                    <FormInput label="Title" value={form.title} onChange={(v) => setForm({ ...form, title: v })} required />
+                    <div>
+                        <label className="block text-sm font-bold text-[#adaaaa] mb-2">Description</label>
+                        <textarea className="cf-input resize-none" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                    </div>
+                    <FormInput label="Date & Time" type="datetime-local" value={form.event_date} onChange={(v) => setForm({ ...form, event_date: v })} required />
+                    <FormInput label="Location" value={form.location} onChange={(v) => setForm({ ...form, location: v })} />
+                    <FormInput label="Organizer" value={form.organizer} onChange={(v) => setForm({ ...form, organizer: v })} />
+                    <FormInput label="Category" value={form.category} onChange={(v) => setForm({ ...form, category: v })} placeholder="e.g., academic, cultural, sports, tech" />
+                </AdminForm>
+            )}
+
+            <div className="space-y-3">
+                {events.map(ev => (
+                    <div key={ev.id} className="flex justify-between items-center p-4 rounded-2xl bg-[#1a1919] border border-[rgba(73,72,71,0.15)] hover:bg-[#262626] transition-all">
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <p className="text-sm font-bold text-white">{ev.title}</p>
+                                {ev.category && <span className="text-[10px] font-bold px-2 py-0.5 bg-[#c0fe71]/10 text-[#c0fe71] rounded-full">{ev.category}</span>}
+                            </div>
+                            <p className="text-xs text-[#adaaaa]">
+                                {new Date(ev.event_date).toLocaleString()} • {ev.location || 'No location'} • {ev.organizer || 'No organizer'}
+                            </p>
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={() => handleEdit(ev)} className="p-2 bg-[#262626] hover:bg-[#fd9d27] text-[#adaaaa] hover:text-[#4a2c00] rounded-lg transition-all"><Edit3 size={14} /></button>
+                            <button onClick={() => handleDelete(ev.id)} className="p-2 bg-[#262626] hover:bg-[#ff7351] text-[#adaaaa] hover:text-white rounded-lg transition-all"><Trash2 size={14} /></button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// ──── Feedback Management ────
+const FeedbackSection = () => {
+    const [feedbackList, setFeedbackList] = useState([]);
+    const [stats, setStats] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchData = useCallback(async () => {
+        try {
+            const [fbRes, statsRes] = await Promise.all([
+                api.get('/feedback'),
+                api.get('/feedback/stats')
+            ]);
+            setFeedbackList(fbRes.data);
+            setStats(statsRes.data);
+        } catch (err) { console.error(err); }
+        finally { setLoading(false); }
+    }, []);
+
+    useEffect(() => { fetchData(); }, [fetchData]);
+
+    const handleDelete = async (id) => {
+        if (!confirm('Delete this feedback?')) return;
+        try { await api.delete(`/feedback/${id}`); fetchData(); }
+        catch (err) { alert('Delete failed'); }
+    };
+
+    if (loading) return <div className="flex justify-center py-20"><div className="spinner" style={{ width: 32, height: 32 }} /></div>;
+
+    return (
+        <div className="space-y-6">
+            {/* Stats Cards */}
+            {stats.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {stats.map((s, i) => (
+                        <div key={i} className="p-5 rounded-2xl bg-[#1a1919] border border-[rgba(73,72,71,0.15)]">
+                            <p className="text-[10px] font-bold text-[#494847] uppercase tracking-widest mb-2">{s.category}</p>
+                            <div className="flex items-end gap-3">
+                                <p className="text-2xl font-black text-white tracking-tight">{s.count}</p>
+                                <div className="flex items-center gap-1 mb-1">
+                                    <Star size={12} className="text-[#fd9d27]" fill="#fd9d27" />
+                                    <span className="text-sm font-bold text-[#fd9d27]">{s.avg_rating || '–'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Feedback List */}
+            <div className="space-y-3">
+                <p className="text-sm text-[#adaaaa] font-medium">{feedbackList.length} feedback submission{feedbackList.length !== 1 ? 's' : ''}</p>
+                {feedbackList.map(fb => (
+                    <div key={fb.id} className="flex justify-between items-start p-4 rounded-2xl bg-[#1a1919] border border-[rgba(73,72,71,0.15)] hover:bg-[#262626] transition-all">
+                        <div className="flex-1 min-w-0 mr-4">
+                            <div className="flex items-center gap-2 mb-1">
+                                <p className="text-sm font-bold text-white">{fb.title}</p>
+                                <span className="text-[10px] font-bold px-2 py-0.5 bg-[#71ceff]/10 text-[#71ceff] rounded-full">{fb.category}</span>
+                                {fb.rating > 0 && (
+                                    <span className="flex items-center gap-0.5 text-[10px] font-bold text-[#fd9d27]">
+                                        <Star size={10} fill="#fd9d27" /> {fb.rating}
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-xs text-[#adaaaa] line-clamp-2 mb-1">{fb.message}</p>
+                            <p className="text-[10px] text-[#494847] font-bold">By {fb.author} • {new Date(fb.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <button onClick={() => handleDelete(fb.id)} className="p-2 bg-[#262626] hover:bg-[#ff7351] text-[#adaaaa] hover:text-white rounded-lg transition-all flex-shrink-0"><Trash2 size={14} /></button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// ──── Lost & Found Moderation ────
+const LostFoundSection = () => {
+    const [items, setItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState('');
+
+    const fetchItems = useCallback(async () => {
+        try {
+            const params = {};
+            if (filter) params.status = filter;
+            const res = await api.get('/lost-found', { params });
+            setItems(res.data);
+        } catch (err) { console.error(err); }
+        finally { setLoading(false); }
+    }, [filter]);
+
+    useEffect(() => { fetchItems(); }, [fetchItems]);
+
+    const handleUpdateStatus = async (id, newStatus) => {
+        try {
+            await api.put(`/lost-found/${id}/status`, { status: newStatus });
+            fetchItems();
+        } catch (err) { alert('Status update failed'); }
+    };
+
+    const handleDelete = async (id) => {
+        if (!confirm('Delete this item?')) return;
+        try { await api.delete(`/lost-found/${id}`); fetchItems(); }
+        catch (err) { alert('Delete failed'); }
+    };
+
+    if (loading) return <div className="flex justify-center py-20"><div className="spinner" style={{ width: 32, height: 32 }} /></div>;
+
+    const getStatusColor = (status) => {
+        const map = { open: '#c0fe71', claimed: '#fd9d27', closed: '#494847' };
+        return map[status] || '#adaaaa';
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="flex justify-between items-center">
+                <p className="text-sm text-[#adaaaa] font-medium">{items.length} item{items.length !== 1 ? 's' : ''}</p>
+                <div className="flex gap-2">
+                    {['', 'open', 'claimed', 'closed'].map(f => (
+                        <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${filter === f ? 'bg-[#fd9d27]/10 text-[#fd9d27]' : 'bg-[#1a1919] text-[#adaaaa] hover:bg-[#262626]'}`}>
+                            {f || 'All'}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                {items.map(item => {
+                    const statusColor = getStatusColor(item.status);
+                    return (
+                        <div key={item.id} className="flex justify-between items-start p-4 rounded-2xl bg-[#1a1919] border border-[rgba(73,72,71,0.15)] hover:bg-[#262626] transition-all">
+                            <div className="flex-1 min-w-0 mr-4">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest ${item.type === 'lost' ? 'bg-[#ff7351]/10 text-[#ff7351]' : 'bg-[#c0fe71]/10 text-[#c0fe71]'}`}>
+                                        {item.type}
+                                    </span>
+                                    <p className="text-sm font-bold text-white">{item.title}</p>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest" style={{ backgroundColor: `${statusColor}15`, color: statusColor }}>
+                                        {item.status}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-[#adaaaa] line-clamp-1 mb-1">{item.description || 'No description'}</p>
+                                <p className="text-[10px] text-[#494847] font-bold">
+                                    Location: {item.location || 'N/A'} • Posted by {item.posted_by} • {new Date(item.created_at).toLocaleDateString()}
+                                </p>
+                            </div>
+                            <div className="flex gap-2 flex-shrink-0">
+                                {item.status === 'open' && (
+                                    <button onClick={() => handleUpdateStatus(item.id, 'claimed')} className="px-3 py-1.5 bg-[#fd9d27]/10 hover:bg-[#fd9d27]/20 text-[#fd9d27] text-xs font-bold rounded-lg transition-all">
+                                        Claim
+                                    </button>
+                                )}
+                                {item.status !== 'closed' && (
+                                    <button onClick={() => handleUpdateStatus(item.id, 'closed')} className="px-3 py-1.5 bg-[#262626] hover:bg-[#494847] text-[#adaaaa] text-xs font-bold rounded-lg transition-all">
+                                        Close
+                                    </button>
+                                )}
+                                <button onClick={() => handleDelete(item.id)} className="p-2 bg-[#262626] hover:bg-[#ff7351] text-[#adaaaa] hover:text-white rounded-lg transition-all"><Trash2 size={14} /></button>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+// ──── Marketplace Moderation ────
+const MarketplaceSection = () => {
+    const [listings, setListings] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState('');
+
+    const fetchListings = useCallback(async () => {
+        try {
+            const params = {};
+            if (filter) params.status = filter;
+            else params.status = 'all'; // Fetch all statuses for admin view
+            const res = await api.get('/marketplace', { params });
+            setListings(res.data);
+        } catch (err) { console.error(err); }
+        finally { setLoading(false); }
+    }, [filter]);
+
+    useEffect(() => { fetchListings(); }, [fetchListings]);
+
+    const handleDelete = async (id) => {
+        if (!confirm('Delete this listing?')) return;
+        try { await api.delete(`/marketplace/${id}`); fetchListings(); }
+        catch (err) { alert('Delete failed'); }
+    };
+
+    const handleMarkSold = async (listing) => {
+        try {
+            await api.put(`/marketplace/${listing.id}`, { ...listing, status: 'sold' });
+            fetchListings();
+        } catch (err) { alert('Update failed'); }
+    };
+
+    if (loading) return <div className="flex justify-center py-20"><div className="spinner" style={{ width: 32, height: 32 }} /></div>;
+
+    return (
+        <div className="space-y-4">
+            <div className="flex justify-between items-center">
+                <p className="text-sm text-[#adaaaa] font-medium">{listings.length} listing{listings.length !== 1 ? 's' : ''}</p>
+                <div className="flex gap-2">
+                    {['', 'available', 'sold'].map(f => (
+                        <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${filter === f ? 'bg-[#fd9d27]/10 text-[#fd9d27]' : 'bg-[#1a1919] text-[#adaaaa] hover:bg-[#262626]'}`}>
+                            {f || 'All'}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                {listings.map(l => (
+                    <div key={l.id} className="flex justify-between items-start p-4 rounded-2xl bg-[#1a1919] border border-[rgba(73,72,71,0.15)] hover:bg-[#262626] transition-all">
+                        <div className="flex-1 min-w-0 mr-4">
+                            <div className="flex items-center gap-2 mb-1">
+                                <p className="text-sm font-bold text-white">{l.title}</p>
+                                <span className="text-sm font-black text-[#c0fe71]">₹{l.price}</span>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest ${l.status === 'available' ? 'bg-[#c0fe71]/10 text-[#c0fe71]' : 'bg-[#494847]/20 text-[#494847]'}`}>
+                                    {l.status}
+                                </span>
+                            </div>
+                            <p className="text-xs text-[#adaaaa] line-clamp-1 mb-1">{l.description || 'No description'}</p>
+                            <p className="text-[10px] text-[#494847] font-bold">
+                                {l.category} • By {l.seller_name} • {new Date(l.created_at).toLocaleDateString()}
+                            </p>
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0">
+                            {l.status === 'available' && (
+                                <button onClick={() => handleMarkSold(l)} className="px-3 py-1.5 bg-[#fd9d27]/10 hover:bg-[#fd9d27]/20 text-[#fd9d27] text-xs font-bold rounded-lg transition-all">
+                                    Mark Sold
+                                </button>
+                            )}
+                            <button onClick={() => handleDelete(l.id)} className="p-2 bg-[#262626] hover:bg-[#ff7351] text-[#adaaaa] hover:text-white rounded-lg transition-all"><Trash2 size={14} /></button>
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 };

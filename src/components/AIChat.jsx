@@ -4,7 +4,7 @@ import api from '../services/api';
 
 const AIChat = ({ isOpen, onClose }) => {
     const [messages, setMessages] = useState([
-        { role: 'bot', text: 'Hello! I am CampusFlow AI. Ask me about today\'s mess menu or campus timings!' }
+        { role: 'bot', text: 'Hello! I\'m CampusFlow AI. Ask me about mess menus, placements, campus events, bus schedules, announcements, lost & found — anything campus-related!' }
     ]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
